@@ -10,7 +10,11 @@ app.set('views', __dirname + '/views');
 app.set('view engine', 'hbs');
 
 app.get('/', (req, res) => {
-    res.render('login');
+    res.render('login', {title: 'Registration'});
+});
+
+app.post('/login', (req, res) => {
+    res.render('login', {title: 'Registration Complete'});
 });
 
 app.listen(port, () => {console.log('listening at PORT 3000')});
