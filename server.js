@@ -95,7 +95,7 @@ app.get('/profile', authenticationMiddleware(), (req, res) => {
     res.render('profile', {title: 'Profile'})
 });
 
-app.get('/login', authenticationMiddleware(), (req, res) => {
+app.get('/login', (req, res) => {
     res.render('login', {title: 'Login'})
 });
 
