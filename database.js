@@ -11,8 +11,7 @@ connection.connect(() => {console.log('CONNECTED TO DB')});
 
 
 var saveUser = (user, email, password, callback) => {
-    console.log('saving', user, email, password);
-    var query = `INSERT INTO users2 (username, email, password) VALUES ('${user}', '${email}', '${password}')`;
+    var query = `INSERT INTO users3 (username, email, password) VALUES ('${user}', '${email}', '${password}')`;
     connection.query(query, (err, data) => {
         if(err){
             callback(null, err);
@@ -22,5 +21,6 @@ var saveUser = (user, email, password, callback) => {
     })
 }
 
+exports.connection = connection;
 exports.saveUser = saveUser;
 
