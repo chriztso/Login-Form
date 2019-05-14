@@ -5,8 +5,13 @@ var bodyParser = require('body-parser');
 var db = require('./database.js');
 var expressValidator = require('express-validator');
 var bcrypt = require('bcrypt');
+var cookieParser = require('cookie-parser');
 const saltRounds = 10;
+var connection = require('./database.js').connection;
 
+//Authentication
+var session = require('express-session');
+var passport = require('passport');
 
 hbs.registerPartials(__dirname + '/views/partials');
 
@@ -17,11 +22,30 @@ app.set('view engine', 'hbs');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(expressValidator());
+app.use(cookieParser());
+
+app.use(session({
+    secret: 'keyboard cat',
+    resave: false,
+    saveUninitialized:  false,
+    // cookie: { secure: true }
+}));
+ 
+app.use(passport.initialize());
+app.use(passport.session());  
+
+
 app.get('/', (req, res) => {
-    res.render('login', {title: 'Registration'});
+    console.log('hi', req.user);
+    console.log('bye', req.isAuthenticated());
+    res.render('home', {title: 'Home'});
 });
 
-app.post('/login', (req, res) => {
+app.get('/register', (req, res) => {
+    res.render('register', {title: 'Registration'});
+});
+
+app.post('/register', (req, res) => {
     req.checkBody('username', 'Username field cannot be empty').notEmpty();
     req.checkBody('email', 'Email field cannot be empty').notEmpty();
     req.checkBody('email', 'Email must be valid').isEmail();
@@ -32,7 +56,7 @@ app.post('/login', (req, res) => {
     if(errors){
         console.log('errors', errors);
 
-        res.render('login', {
+        res.render('register', {
             title: 'Registration Error', 
             errors: errors
         })
@@ -48,7 +72,18 @@ app.post('/login', (req, res) => {
                console.log(err);
                return;
            }
-           res.render('login', {title: 'Registration Complete'});
+           connection.query('SELECT LAST_INSERT_ID() as user_id', (err, data) => {
+               if(err){
+                   throw error;
+                   return;
+               }
+               var user_id = data[0];
+               console.log(user_id);
+               //user_id is passed to login which goes to serialize
+               req.login(user_id, (err, data) => {
+                   res.redirect('/');
+               })
+           })
    
        })
     })
@@ -56,5 +91,24 @@ app.post('/login', (req, res) => {
    }
 
 });
+
+
+//takes in user_id and store it in session 
+//serialize means writing user data to session
+//store user_id
+passport.serializeUser(function(user_id, done) {
+    done(null, user_id);
+  });
+  
+
+//deserialize means retrieveing datafrom session
+//read from session
+//gets user_id from serialize user
+passport.deserializeUser(function(user_id, done) {
+    done(null, user_id);
+});
+
+
+
 
 app.listen(port, () => {console.log('listening at PORT 3000')});
