@@ -4,6 +4,8 @@ var hbs = require('hbs');
 var bodyParser = require('body-parser');
 var db = require('./database.js');
 var expressValidator = require('express-validator');
+var bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 
 hbs.registerPartials(__dirname + '/views/partials');
@@ -34,20 +36,24 @@ app.post('/login', (req, res) => {
             title: 'Registration Error', 
             errors: errors
         })
-    }
+    } else{
 
     var username =  req.body.username;
     var email = req.body.email;
     var password = req.body.password;
     
-    db.saveUser(username, email, password, (err, data) => {
-        if(err){
-            console.log(err);
-            return;
-        }
-        res.render('login', {title: 'Registration Complete'});
-
+    bcrypt.hash(password, saltRounds, function(err, hash) {
+       db.saveUser(username, email, hash, (err, data) => {
+           if(err){
+               console.log(err);
+               return;
+           }
+           res.render('login', {title: 'Registration Complete'});
+   
+       })
     })
+  
+   }
 
 });
 
