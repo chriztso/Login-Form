@@ -12,6 +12,7 @@ var connection = require('./database.js').connection;
 //Authentication
 var session = require('express-session');
 var passport = require('passport');
+var MySQLStore = require('express-mysql-session')(session);
 
 hbs.registerPartials(__dirname + '/views/partials');
 
@@ -24,9 +25,19 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(expressValidator());
 app.use(cookieParser());
 
+var options = {
+    host: 'localhost', 
+    user: 'root', 
+    password: 'yourpassword', 
+    database: 'login'
+}
+
+var sessionStore = new MySQLStore(options);
+
 app.use(session({
     secret: 'keyboard cat',
     resave: false,
+    store: sessionStore,
     saveUninitialized:  false,
     // cookie: { secure: true }
 }));
@@ -39,6 +50,14 @@ app.get('/', (req, res) => {
     console.log('hi', req.user);
     console.log('bye', req.isAuthenticated());
     res.render('home', {title: 'Home'});
+});
+
+app.get('/profile', authenticationMiddleware(), (req, res) => {
+    res.render('profile', {title: 'Profile'})
+});
+
+app.get('/login', authenticationMiddleware(), (req, res) => {
+    res.render('login', {title: 'Login'})
 });
 
 app.get('/register', (req, res) => {
@@ -107,6 +126,15 @@ passport.serializeUser(function(user_id, done) {
 passport.deserializeUser(function(user_id, done) {
     done(null, user_id);
 });
+
+function authenticationMiddleware () {  
+	return (req, res, next) => {
+		console.log(`req.session.passport.user: ${JSON.stringify(req.session.passport)}`);
+
+	    if (req.isAuthenticated()) return next();
+	    res.redirect('/login')
+	}
+}
 
 
 
