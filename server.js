@@ -12,6 +12,7 @@ var connection = require('./database.js').connection;
 //Authentication
 var session = require('express-session');
 var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
 var MySQLStore = require('express-mysql-session')(session);
 
 hbs.registerPartials(__dirname + '/views/partials');
@@ -41,6 +42,38 @@ app.use(session({
     saveUninitialized:  false,
     // cookie: { secure: true }
 }));
+
+
+passport.use(new LocalStrategy(
+    function(username, password, done) {
+        console.log(username);
+        console.log(password);
+        var query = `SELECT id, password FROM users3 WHERE username = '${username}'`;
+        connection.query(query, (err, data) => {
+            if(err){
+                done(err)
+            }
+
+            if(data.length === 0){
+                return done(null, false);
+            }
+
+            var hash = data[0].password.toString();
+            //compare password with database password
+            bcrypt.compare(password, hash, (err, response) => {
+              if(response === true){
+                //successfully login 
+                return done(null, {user_id: data[0].id});
+              } else{
+                  return done(null, false);
+              }  
+
+            })
+
+        })
+    }
+));
+    
  
 app.use(passport.initialize());
 app.use(passport.session());  
@@ -60,9 +93,16 @@ app.get('/login', authenticationMiddleware(), (req, res) => {
     res.render('login', {title: 'Login'})
 });
 
+app.post('/login', passport.authenticate('local', {
+    successRedirect: '/profile',
+    failureRedirect: '/login'
+}));
+
 app.get('/register', (req, res) => {
     res.render('register', {title: 'Registration'});
 });
+
+
 
 app.post('/register', (req, res) => {
     req.checkBody('username', 'Username field cannot be empty').notEmpty();
